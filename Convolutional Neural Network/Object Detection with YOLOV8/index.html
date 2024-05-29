@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YOLOv8 Object Detection Documentation</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>YOLOv8 Object Detection Documentation</h1>
+    </header>
+    <main>
+      <section id="introduction">
+        <h2>Introduction</h2>
+        <p>
+          This documentation explains the Python code used for object detection
+          using the YOLOv8 model from Ultralytics. The code demonstrates loading
+          a pre-trained YOLOv8 model, making predictions on an image, and
+          processing video frames for real-time object detection.
+        </p>
+      </section>
+      <section id="installation">
+        <h2>Installation</h2>
+        <pre><code>!pip install ultralytics</code></pre>
+        <p>Install the Ultralytics library which includes the YOLOv8 model.</p>
+      </section>
+      <section id="load-model">
+        <h2>Loading the Model</h2>
+        <pre><code>from ultralytics import YOLO
+
+import numpy as np
+
+# Load pretrained YOLOv8n model
+model = YOLO("yolov8n.pt", "v8")</code></pre>
+        <p>
+          This section loads the YOLOv8n model. The 'yolov8n.pt' file is a
+          pre-trained model file.
+        </p>
+      </section>
+      <section id="image-detection">
+        <h2>Image Detection</h2>
+        <pre><code>detection_output = model.predict(source="a.jpg", conf=0.25, save=True)
+
+print(detection_output)
+
+print(detection_output[0].cpu().numpy())</code></pre>
+        <p>
+          Make predictions on an image ('a.jpg') with a confidence threshold of
+          25% and save the results. The output is then printed and converted to
+          a numpy array.
+        </p>
+      </section>
+      <section id="visualization">
+        <h2>Visualization</h2>
+        <pre><code>import matplotlib.pyplot as plt
+import seaborn as sns
+from skimage.io import imread
+
+from IPython.display import Image
+
+Image("a.jpg")</code></pre>
+        <p>Display the resulting image using IPython's display capabilities.</p>
+      </section>
+      <section id="class-list">
+        <h2>Class List</h2>
+        <pre><code>import cv2 as cv
+import random
+
+# Opening the file in read mode
+my_file = open("coco.txt", "r")
+
+data = my_file.read()
+
+class_list = data.split("\n")
+
+my_file.close()
+
+# Generate random colors from class list
+detection_colors = []
+for i in range(len(class_list)):
+  r = random.randint(0, 255)
+  g = random.randint(0, 255)
+  b = random.randint(0, 255)
+  detection_colors.append((b,g,r))</code></pre>
+        <p>
+          Read the COCO class names from 'coco.txt' and generate random colors
+          for each class for visualization purposes.
+        </p>
+      </section>
+      <section id="video-processing">
+        <h2>Video Processing</h2>
+        <pre><code># Vals to resize video frames | small frame optimize to run
+frame_wid = 640
+frame_hyt = 480
+
+cap = cv.VideoCapture("video.mp4")
+
+if not cap.isOpened():
+    print("Cannot open Camera")
+    exit()
+
+while True:
+    # Capture frame-by-frame
+    ret, frame = cap.read()
+    # if frame is read correctly ret is True
+    if not ret:
+        print("Can't resolve frame (stream end?). Exiting...")
+        break
+
+    # resize the frame | small frame optimize the run
+    # frame = cv2.resize(frame, (frame_vid, frame_hyt))
+
+    cv.imwrite("frame.png", frame)
+
+    # Predict on Image
+    detect_params = model.predict(source='frame.png', conf=0.45, save=False)
+
+    # Convert tensor array to numpy
+    DP = detect_params[0].cpu().numpy()
+
+    if len(DP) != 0:
+        # Loop through all detections in current frame
+        for i in range(len(detect_params[0])):
+            boxes = detect_params[0].boxes
+            box = boxes[i]
+            clsID = box.cls.cpu().numpy()[0]
+            conf = box.conf.cpu().numpy()[0]
+            bb = box.xyxy.cpu().numpy()[0]
+
+            cv.rectangle(
+                frame,
+                (int(bb[0]), int(bb[1])),
+                (int(bb[2]), int(bb[3])),
+                detection_colors[int(clsID)],
+                3
+            )
+
+            # Display class name and confidence
+            font = cv.FONT_HERSHEY_COMPLEX
+            cv.putText(frame,
+                       f"{class_list[int(clsID)]} {round(conf, 3)}%",
+                       (int(bb[0]), int(bb[1] - 10)),
+                       font,
+                       1,
+                       (255, 255, 255),
+                       2
+            )
+
+    # Display the resulting frame
+    from google.colab.patches import cv2_imshow
+    import matplotlib.pyplot as plt
+    plt.figure(figsize=(12,12))
+    plt.axis("off")
+    plt.imshow(frame)
+
+    # Terminate run when "Q" pressed
+    if cv.waitKey(1) == ord("q"):
+      break
+
+# When everything done, release the capture
+cap.release()
+cv.destroyAllWindows()</code></pre>
+        <p>
+          Process video frames in real-time to detect objects. Each frame is
+          captured, resized, and passed to the YOLO model for predictions.
+          Detected objects are drawn with bounding boxes and class labels.
+        </p>
+      </section>
+    </main>
+    <footer>
+      <p>&copy; 2024 YOLOv8 Object Detection Documentation</p>
+    </footer>
+    <script src="script.js"></script>
+  </body>
+</html>
