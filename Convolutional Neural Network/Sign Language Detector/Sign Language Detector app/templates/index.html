@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign Language Detector</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='styles.css') }}"
+    />
+  </head>
+  <body>
+    <h1>Sign Language Detector</h1>
+    <form id="uploadForm" enctype="multipart/form-data">
+      <label for="fileInput">Upload Image:</label>
+      <input
+        type="file"
+        id="fileInput"
+        name="file"
+        accept="image/*"
+        capture="camera"
+      />
+      <button type="submit">Predict</button>
+    </form>
+    <div id="result"></div>
+
+    <script>
+      document
+        .getElementById("uploadForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          const formData = new FormData();
+          const fileInput = document.getElementById("fileInput");
+          formData.append("file", fileInput.files[0]);
+
+          fetch("/predict", {
+            method: "POST",
+            body: formData,
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.error) {
+                document.getElementById(
+                  "result"
+                ).innerText = `Error: ${data.error}`;
+              } else {
+                document.getElementById(
+                  "result"
+                ).innerText = `Prediction: ${data.prediction}`;
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+            });
+        });
+    </script>
+  </body>
+</html>
